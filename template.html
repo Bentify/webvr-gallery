@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>{{FIRST_NAME}}'s gallery</title>
+    <script src="https://archilogic-com.github.io/webvr-gallery/lib/aframe.min.js"></script>
+    <script src="https://dist.3d.io/3dio-js/1.0.5/3dio.min.js"></script>
+    <script src="https://rawgit.com/feiss/aframe-environment-component/master/dist/aframe-environment-component.min.js"></script>
+    <script src="lib/aframe-teleport-controls.min.js"></script>
+
+    <meta name="viewport" content="width=device-width" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@archilogic3d" />
+
+    <meta property="og:title" content="{{FIRST_NAME}}'s gallery" />
+    <meta property="og:description" content="Visit {{FIRST_NAME}}'s VR photo gallery" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="{{IMAGE_URL}}" />
+  </head>
+  <body>
+    <a-scene>
+      <a-entity environment="preset: forest" position="0 -1 0"></a-entity>
+      <a-entity io3d-data3d="key:/535e624259ee6b0200000484/bake/2017-04-10_11-19-26_Wf5oYb/regular/lighting.gz.data3d.buffer" position="4.84 0 -7.361" rotation="0 180 0"></a-entity>
+      {{IMAGES}}
+
+      <a-entity id="cameraRig">
+        <a-camera></a-camera>
+        <a-entity daydream-controls teleport-controls="cameraRig: #cameraRig;curveShootingSpeed: 10;"></a-entity>
+      </a-entity>
+
+    </a-scene>
+  </body>
+</html>

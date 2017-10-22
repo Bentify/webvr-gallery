@@ -1,0 +1,388 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gallery of you</title>
+  <script src="lib/aframe.min.js"></script>
+  <script src="lib/3dio.min.js"></script>
+  <script src="lib/aframe-environment.min.js"></script>
+  <script src="lib/aframe-teleport-controls.min.js"></script>
+
+  <style>
+    * {
+        vertical-align: baseline;
+        font-weight: inherit;
+        font-family: inherit;
+        font-style: inherit;
+        font-size: 100%;
+        padding: 0;
+        border: 0;
+        margin: 0;
+        border-collapse: collapse;
+        /* prevent padding changing dimensions */
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+    }
+
+    body {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+      height: initial !important;
+      overflow: initial !important;
+    }
+
+    h1 {
+      font-size: 1.3em;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      margin-bottom: 1em;
+    }
+
+    button {
+      border: 1px solid black;
+      padding: 0.3em 1em;
+    }
+
+    section {
+      z-index: 2;
+      background: white;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      overflow-y: scroll;
+      text-align: center;
+    }
+
+    a-scene {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    .img-wrapper {
+      box-sizing: border-box;
+      width: 200px;
+      text-align: center;
+      overflow: hidden;
+      display: inline-block;
+      height: 200px;
+      line-height: 200px;
+      margin: 3px;
+    }
+
+    .img-wrapper img {
+      display: inline-block;
+      pointer-events: none;
+      vertical-align: middle;
+    }
+
+    .selected {
+      border: 2px solid skyblue;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .sticky {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.8);
+      height: 5em;
+      padding-top: 0.6em;
+    }
+
+    .floaty {
+      font-size: 0.5em;
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      color: #ccc;
+      z-index: 3;
+    }
+
+    #selection {
+      padding-bottom: 4em;
+    }
+
+    #share {
+      font-size: 1.2em;
+      height: 2.4em;
+      line-height: 2.4em;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+  </style>
+</head>
+<body>
+  <section id="setup">
+    <img style="width:100%;max-width:800px;" src="header.png" alt="Gallery of You">
+    <h1 class="hidden">Gallery of You</h1>
+    <p>
+      Login with Facebook to begin creating your VR photo gallery
+    </p>
+    <fb:login-button scope="public_profile,email, user_photos" onlogin="start();"> </fb:login-button>
+  </section>
+
+  <section id="selection" class="hidden">
+    <h1>Pictures</h1>
+
+    <p>Now select up to 10 images for your gallery</p>
+
+    <div class="sticky">
+      <p>Selected <span id="countSelected">0</span> of 10 pictures</p>
+      <button id="generate">Visit gallery</button>
+    </div>
+
+    <div id="imageContainer"></div>
+  </section>
+
+  <section id="share" class="hidden">
+    Your gallery is online at <a id="shareUrl" href="#"></a>.
+  </section>
+
+  <a-scene embedded>
+    <a-entity environment="preset: forest" position="0 -1 0"></a-entity>
+    <a-entity id="gallery" io3d-data3d="key:/535e624259ee6b0200000484/bake/2017-04-10_11-19-26_Wf5oYb/regular/lighting.gz.data3d.buffer" position="4.84 0 -7.361" rotation="0 180 0"></a-entity>
+
+    <a-entity id="cameraRig">
+      <a-camera></a-camera>
+      <a-entity daydream-controls teleport-controls="cameraRig: #cameraRig;curveShootingSpeed: 10;"></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <p class="floaty"><a href="privacy.html">Privacy</a></p>
+
+  <div id="fb-root"></div>
+
+  <script>
+    const sceneId = 'd86c92d7-294a-43f2-aaab-1e8346c5a53b'
+    const scene = document.querySelector('a-scene')
+    const imgContainer = document.getElementById('imageContainer')
+    const startBtn = document.querySelector('button#start')
+    const countSelected = document.getElementById('countSelected')
+    let numSelected = 0
+
+    io3d.config({
+      publishableApiKey: '9fdafcef-c5ff-4f59-815c-3e08f55b0c26'
+    })
+
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId            : '351082582011224',
+//        appId            : '2070534446560462',
+        cookie           : true,
+        autoLogAppEvents : true,
+        xfbml            : true,
+        version          : 'v2.10'
+      });
+    }
+
+    // Setup event listeners
+
+    imgContainer.addEventListener('click', selectImage)
+
+    document.getElementById('generate').addEventListener('click', buildGallery)
+
+    // Helpers
+
+    function start() {
+      FB.getLoginStatus(previewImages)
+    }
+
+    // https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
+    function shuffle(a) {
+      var j, x, i;
+      for (i = a.length - 1; i > 0; i--) {
+        j = Math.floor(Math.random() * (i + 1));
+        x = a[i];
+        a[i] = a[j];
+        a[j] = x;
+      }
+    }
+
+    function previewImages() {
+      document.getElementById('setup').classList.add('hidden')
+      document.getElementById('selection').classList.remove('hidden')
+
+      loginWithFacebook()
+      .then(loadPhotosFromFacebook)
+      .then(photos => photos.filter(photo => photo.width > photo.height))
+      .then(photos => photos.forEach(photo => {
+        var wrapper = document.createElement('div')
+        wrapper.className = 'img-wrapper'
+        wrapper.dataset.photo = JSON.stringify(photo)
+
+        var img = new Image()
+        if(photo.width > photo.height) img.width = 200
+        else img.height = 200
+        img.src = photo.source
+
+        wrapper.appendChild(img)
+        imgContainer.appendChild(wrapper)
+      }))
+    }
+
+    function selectImage(evt) {
+      if (!evt.target.classList.contains('img-wrapper')) return
+
+      if(!evt.target.classList.contains('selected') && numSelected === 10) return
+
+      if (evt.target.classList.toggle('selected')) numSelected++
+      else numSelected--
+
+      countSelected.textContent = numSelected
+    }
+
+    function buildGallery() {
+      let photos = Array.from(document.querySelectorAll('.selected'))
+        .map((elem) => JSON.parse(elem.dataset.photo))
+
+      shuffle(photos)
+
+      let x = -2, z = -3.48, ry = 0
+
+      for(var i=0; i<Math.min(photos.length, 8); i++) {
+        addPhoto(photos[i], x, 1.6, z, ry)
+        x += 1.2
+        if(i === 3) {
+          z = -4.13
+          ry = 180
+          x = -2
+        }
+      }
+
+      if(photos.length === 9) {
+        let scale = photos[8].height / photos[8].width
+        addPhoto(photos[8], -15.68, 2 - scale, -3.55, 90, 2, scale * 2)
+      } else if(photos.length === 10) {
+        let scale = photos[8].height / photos[8].width
+        addPhoto(photos[8], -15.68, 1.6, -4.5, 90, 1.5, 1.5 * scale)
+        scale = photos[9].height / photos[9].width
+        addPhoto(photos[9], -15.68, 1.6, -2.7, 90, 1.5, 1.5 * scale)
+      }
+
+      // load profile pic
+      getFacebookProfilePicture()
+        .then(result => addPhoto({source: result.data.url, width: 1, height: 1}, -7.990, 2.25, -0.419, 90, 2, 2))
+        .then(uploadGallery)
+
+      // hide the selection overlay
+      document.getElementById('selection').classList.add('hidden')
+    }
+
+    function uploadGallery() {
+      return Promise.all([getFirstName(), getGalleryHtml(), getScreenshotBlob()])
+      .then(([firstName, html, screenshotBlob]) => {
+        screenshotBlob.name = 'preview.png'
+        return io3d.storage.put(screenshotBlob)
+        .then(imageKey => {
+          html = html.replace(/{{FIRST_NAME}}/g, firstName).replace(/{{IMAGE_URL}}/g, 'https://storage.3d.io' + imageKey)
+          var htmlFile = new Blob([html], {type: 'text/html'})
+          htmlFile.name = 'index.html'
+          return io3d.storage.put(htmlFile)
+        })
+      })
+      .then(createShortlink)
+      .then(shortUrl => shortUrl.replace('https://app.3d.io/', ''))
+      .then(appKey => {
+        // replace link target
+        const link = document.getElementById('shareUrl')
+        link.href = `http://app.3d.io/${appKey}`
+        link.textContent = `app.3d.io/${appKey}`
+        // show share overlay
+        document.getElementById('share').classList.remove('hidden')
+      })
+    }
+
+    function createShortlink(storageKey) {
+      console.log('setting up shortlink for ', storageKey)
+      return fetch(`https://app.3d.io/get-short-id${storageKey.replace(/\/([^\/]+)$/, '')}`, {
+        method: 'POST',
+        headers: { 'x-api-key': 'thisWillChange' }
+      }).then(r => r.text())
+    }
+
+    function getScreenshotBlob() {
+      return new Promise((resolve, reject) => scene.components.screenshot.getCanvas('perspective').toBlob(resolve))
+    }
+
+    function getFirstName() {
+      return new Promise((resolve, reject) => {
+        FB.api('/me?fields=first_name', resolve)
+      }).then(result => result.first_name)
+    }
+
+    function getGalleryHtml() {
+      return fetch('template.html')
+      .then(r => r.text())
+      .then(template => {
+        let images = Array.from(document.querySelectorAll('a-image')).map(elem => {
+          const position = AFRAME.utils.coordinates.stringify(elem.getAttribute('position'))
+          const scale = AFRAME.utils.coordinates.stringify(elem.getAttribute('scale'))
+          const rotation = AFRAME.utils.coordinates.stringify(elem.getAttribute('rotation'))
+          const src = elem.getAttribute('material').src
+          return `<a-image position="${position}" scale="${scale}" rotation="${rotation}" material="src:url(${src})"></a-image>`
+        }).join('\n')
+        return template.replace(/{{IMAGES}}/g, images)
+        console.log(template)
+      })
+    }
+
+    function loginWithFacebook() {
+      return new Promise((resolve, reject) => {
+        FB.login(resolve, {scope: 'user_photos'})
+      })
+    }
+
+    function loadPhotosFromFacebook() {
+      return new Promise((resolve, reject) => {
+        FB.api("/me/photos?type=uploaded&fields=images&limit=100",
+          function (response) {
+            if (response && !response.error) {
+              resolve(response.data.map(photo => photo.images[0]))
+            } else reject(response && response.error)
+          }
+        )
+      })
+    }
+
+    function getFacebookProfilePicture() {
+      return new Promise((resolve, reject) => {
+        FB.api('/me/picture', resolve)
+      })
+    }
+
+    function addPhoto(photo, x, y, z, ry, sizeX, sizeY) {
+      let img = document.createElement('a-image')
+      let scale = photo.height / photo.width
+      img.setAttribute('material', `src:url(${photo.source})`)
+      img.setAttribute('scale', `${sizeX || 1} ${sizeY || scale} 1`)
+      img.setAttribute('position', `${x} ${y - (scale/2)} ${z}`)
+      img.setAttribute('rotation', `0 ${ry} 0`)
+      scene.appendChild(img)
+      return scale
+    }
+
+    /*** Facebook ***/
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = 'https://connect.facebook.net/de_DE/sdk.js#xfbml=1&version=v2.10';
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+  </script>
+</body>
+</html>
