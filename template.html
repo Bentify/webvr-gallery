@@ -20,7 +20,8 @@
   <body>
     <a-scene>
       <a-entity environment="preset: forest" position="0 -1 0"></a-entity>
-      <a-entity io3d-data3d="key:/535e624259ee6b0200000484/bake/2017-04-10_11-19-26_Wf5oYb/regular/lighting.gz.data3d.buffer" position="4.84 0 -7.361" rotation="0 180 0"></a-entity>
+      <a-entity io3d-data3d="key:/535e624259ee6b0200000484/bake/2017-04-10_11-19-26_Wf5oYb/regular/lighting.gz.data3d.buffer;lightMapExposure: 0.8" position="4.84 0 -7.361" rotation="0 180 0"></a-entity>
+
       {{IMAGES}}
 
       <a-entity id="cameraRig">
@@ -29,7 +30,7 @@
       </a-entity>
     </a-scene>
     <script>
-      if(!window.location.protocol.match(/^https/)) window.location.href = window.location.href.replace(/^http/, 'https')
+      if (!window.location.protocol.match(/^https/)) window.location.href = window.location.href.replace(/^http/, 'https')
     </script>
   </body>
 </html>
